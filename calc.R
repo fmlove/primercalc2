@@ -2,29 +2,32 @@
 
 target_length = 20
 length_var = 2
-GC_content_goal = 50
+GC_content_goal = 52
+GC_content_var = 2
 threeprime_GC_goal = TRUE
-melting_temp_goal = 55
-
+melting_temp_goal = 52
+melting_temp_var = 2
+hairpin_min = 4
+  
 #TODO - handle split without separate sequence
 complement <- function(sequence = NULL, split = NULL){
   if(missing(sequence) & missing(split)){stop("A DNA sequence must be provided.")}
-  if(missing(split)){split = strsplit(sequence, '')}
+  if(missing(split)){split = unlist(strsplit(sequence, ''))}
   comp = sapply(split, function(b){
     if(b == 'A'){'T'}
     else if(b == 'T'){'A'}
     else if(b == 'C'){'G'}
     else if(b == 'G'){'C'}
   })
-  return(paste0(comp))
+  return(paste0(comp, collapse = ''))
 }
 
 antiparallel <- function(sequence, split = NULL){
   if(missing(sequence) & missing(split)){stop("A DNA sequence must be provided.")}
-  if(missing(split)){split = strsplit(sequence, '')}
+  if(missing(split)){split = unlist(strsplit(sequence, ''))}
   comp = complement(split = split)
-  ap = rev(comp)
-  return(paste0(ap))
+  ap = rev(unlist(strsplit(comp, '')))
+  return(paste0(ap, collapse = ''))
 }
 
 
@@ -64,6 +67,25 @@ DNA <- function(sequence){
       )
 }
 
+
+check_self_annealing <- function(sequence = NULL, split = NULL){
+  if(missing(sequence) & missing(split)){stop("A DNA sequence must be provided.")}
+  if(missing(split)){split = unlist(strsplit(sequence, ''))}
+  split = toupper(split)
+  seq = paste0(split, collapse = '')
+  start = 1
+  hairpin = FALSE
+  starts = list()
+  while(start + (hairpin_min - 1) + hairpin_min <= length(split)){
+    scan = antiparallel(split = split[start:(start + (hairpin_min - 1))])
+    s = substr(seq, start + hairpin_min, nchar(seq))
+    if(grepl(scan, s)){hairpin = TRUE; starts = c(starts, start)}
+    start = start + 1
+  }
+  return(hairpin)
+}
+
+
 calculate_seq_primer <- function(sequence, rev = FALSE){
   seq = DNA(sequence)@sequence
   if(rev){
@@ -81,11 +103,21 @@ calculate_seq_primer <- function(sequence, rev = FALSE){
     start = 1
     len = len + 1
   }
-  data.frame(id = 1:length(candidates),
+  
+  cdf = data.frame(id = 1:length(candidates),
              s = sapply(candidates, function(c){c@sequence}),
              GC_percent = sapply(candidates, function(c){c@GC_percent}),
              mt = sapply(candidates, function(c){c@melting_temp}),
              GC_end = grepl("(G|C)$", sapply(candidates, function(c){c@sequence}))
-             )
+  )
+  
+  mt_in_range = sapply(candidates, function(c){c@melting_temp >= melting_temp_goal - melting_temp_var & c@melting_temp <= melting_temp_goal + melting_temp_var})
+  gc_in_range = sapply(candidates, function(c){c@GC_percent >= GC_content_goal - GC_content_var & c@GC_percent <= GC_content_goal + GC_content_var})
+  gc_end = grepl("(G|C)$", sapply(candidates, function(c){c@sequence}))
+  cdf$no_dimers = sapply(candidates, function(c){!check_self_annealing(c@sequence)})
+  
+  cdf$good_candidate = mt_in_range & gc_in_range & gc_end & cdf$no_dimers
+  
+  return(cdf)
 }
 
