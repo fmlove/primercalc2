@@ -54,8 +54,8 @@ DNA <- function(sequence){
   antiparallel = antiparallel(split = split)
   length = nchar(sequence)
   seq.table = table(split)
-  GC_percent = ((seq.table['C'] + seq.table['G'])/length)*100
-  melting_temp = seq.table['A']*2 + seq.table['T']*2 + seq.table['G']*4 + seq.table['C']*4
+  GC_percent = (sum(seq.table['C'], seq.table['G'], na.rm = TRUE)/length)*100
+  melting_temp = sum(seq.table['A']*2, seq.table['T']*2, seq.table['G']*4, seq.table['C']*4, na.rm = TRUE)
   
   new('DNA', sequence = sequence, 
       complement = complement,
@@ -106,9 +106,11 @@ calculate_seq_primer <- function(sequence, rev = FALSE){
   
   cdf = data.frame(id = 1:length(candidates),
              s = sapply(candidates, function(c){c@sequence}),
+             length = sapply(candidates, function(c){nchar(c@sequence)}),
              GC_percent = sapply(candidates, function(c){c@GC_percent}),
              mt = sapply(candidates, function(c){c@melting_temp}),
-             GC_end = grepl("(G|C)$", sapply(candidates, function(c){c@sequence}))
+             GC_end = grepl("(G|C)$", sapply(candidates, function(c){c@sequence})),
+             stringsAsFactors = FALSE
   )
   
   mt_in_range = sapply(candidates, function(c){c@melting_temp >= melting_temp_goal - melting_temp_var & c@melting_temp <= melting_temp_goal + melting_temp_var})
