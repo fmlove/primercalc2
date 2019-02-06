@@ -87,9 +87,10 @@ check_self_annealing <- function(sequence = NULL, split = NULL){
 
 
 calculate_seq_primer <- function(sequence, rev = FALSE){
-  seq = DNA(sequence)@sequence
+  seq.DNA = DNA(sequence)
+  seq = seq.DNA@sequence
   if(rev){
-    seq@antiparallel
+    seq = seq.DNA@antiparallel
   }
   candidates = list()
   start = 1
