@@ -5,7 +5,7 @@ length_var = 2
 GC_content_goal = 52
 GC_content_var = 2
 threeprime_GC_goal = TRUE
-melting_temp_goal = 52
+melting_temp_goal = 58
 melting_temp_var = 2
 hairpin_min = 4
   
