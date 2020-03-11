@@ -1,4 +1,5 @@
 # Sanger seq primer calculator
+#TODO - suggested primers always shorter than sequence...why???
 
 target_length = 20
 length_var = 2
